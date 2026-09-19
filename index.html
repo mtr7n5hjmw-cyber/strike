@@ -1,0 +1,3551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StrikeMenu Dashboard</title>
+<link rel="icon" href="strikemenu-favicon.svg" type="image/svg+xml">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --bg: #05070a;
+    --bg-secondary: #080c12;
+    --card: #0b1017;
+    --card-hover: #101720;
+    --border: #182230;
+    --blue: #e3263f;
+    --blue-hover: #ff4d64;
+    --blue-dark: #861526;
+    --text: #f5f7fa;
+    --muted: #8994a3;
+    --success: #35d07f;
+    --danger: #ff4d61;
+    --warning: #f5b942;
+    --radius: 14px;
+    --accent: #e3263f;
+    --accent-hover: #ff4d64;
+    --accent-soft: rgba(227,38,63,.12);
+    --accent-border: rgba(227,38,63,.28);
+}
+
+:root[data-theme="light"] {
+    --bg: #f5f6f8;
+    --bg-secondary: #ffffff;
+    --card: #ffffff;
+    --card-hover: #fff5f6;
+    --border: #e1d9dc;
+    --text: #1d1719;
+    --muted: #6d6266;
+}
+
+:root[data-theme="light"] .sidebar,
+:root[data-theme="light"] .topbar { background: #ffffff; }
+:root[data-theme="light"] .form-input,
+:root[data-theme="light"] .config-row,
+:root[data-theme="light"] .modal,
+:root[data-theme="light"] .toast { background: #ffffff; color: var(--text); }
+:root[data-theme="light"] .nav-item:hover,
+:root[data-theme="light"] .secondary-btn:hover { background: #fff0f2; }
+:root[data-theme="light"] .page-description,
+:root[data-theme="light"] .card-label { color: #685d61; }
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Inter", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background-color .25s ease, color .25s ease;
+}
+
+body,
+button,
+input,
+textarea,
+.card,
+.sidebar,
+.topbar,
+.modal,
+.account-item {
+    transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.loading-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: grid;
+    place-items: center;
+    background: #07080b;
+    color: white;
+    transition: opacity .25s ease, visibility .25s ease;
+}
+
+.loading-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.loading-brand {
+    display: grid;
+    gap: 18px;
+    justify-items: center;
+    text-align: center;
+}
+
+.loading-brand img {
+    width: min(340px, 68vw);
+    max-height: 150px;
+    object-fit: contain;
+}
+
+.loading-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid rgba(255,255,255,.16);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+button,
+input,
+textarea {
+    font-family: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+/* =========================
+   AUTH
+========================= */
+
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 0%, rgba(227,38,63,.10), transparent 36%),
+        linear-gradient(180deg, #02060b 0%, #050a10 100%);
+}
+
+.auth-container::before,
+.auth-container::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.auth-container::before {
+    background:
+        linear-gradient(120deg, transparent 0 35%, rgba(255, 50, 70, 0.26) 40%, rgba(200, 20, 40, 0.38) 52%, transparent 60%),
+        repeating-linear-gradient(
+            0deg,
+            rgba(255,255,255,0.05) 0,
+            rgba(255,255,255,0.05) 1px,
+            transparent 1px,
+            transparent 4px
+        );
+    opacity: 0.8;
+}
+
+.auth-container::after {
+    background:
+        radial-gradient(circle at 10% 20%, rgba(255,255,255,0.18), transparent 18%),
+        radial-gradient(circle at 80% 30%, rgba(255,255,255,0.12), transparent 18%),
+        radial-gradient(circle at 50% 80%, rgba(255,255,255,0.05), transparent 22%);
+    mix-blend-mode: screen;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 980px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 15px 18px 28px;
+    box-shadow: none;
+    position: relative;
+    z-index: 1;
+    animation: fadeUp .45s ease;
+}
+
+.auth-card.reveal {
+    animation: fadeUp .32s ease;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.logo-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--blue);
+    border-radius: 10px;
+    box-shadow: 0 0 25px rgba(227,38,63,.35);
+}
+
+.brand-lockup {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 28px;
+    margin-bottom: 24px;
+    padding-top: 8px;
+    transform: skewY(-2deg);
+    filter: drop-shadow(0 12px 20px rgba(0,0,0,.45));
+}
+
+.brand-mark {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(255,255,255,1), rgba(182,150,156,.92), rgba(214,25,52,.9));
+    box-shadow:
+        0 0 0 2px rgba(255,255,255,.18),
+        0 18px 28px rgba(16,96,194,.35),
+        inset 0 0 20px rgba(255,255,255,.42),
+        inset 0 -12px 20px rgba(0,0,0,.28);
+    transform: perspective(800px) rotateX(10deg) rotateY(-10deg) rotateZ(-10deg);
+}
+
+.brand-mark::before,
+.brand-mark::after {
+    content: "";
+    position: absolute;
+    inset: 15px;
+    border-radius: 12px;
+    border: 2px solid rgba(255,255,255,.4);
+    background: linear-gradient(135deg, rgba(20,25,32,.12), rgba(255,255,255,.12));
+}
+
+.brand-mark::after {
+    inset: 30px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(255,55,79,.95), rgba(141,9,28,.85));
+    box-shadow: inset 0 0 12px rgba(255,255,255,.4);
+}
+
+.brand-wordmark {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 0.77;
+    font-weight: 900;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    transform: perspective(800px) rotateX(6deg);
+}
+
+.brand-row {
+    display: block;
+    text-shadow:
+        0 1px 0 rgba(255,255,255,.65),
+        0 10px 18px rgba(0,0,0,.55),
+        0 0 18px rgba(227,38,63,.24);
+}
+
+.brand-row-top {
+    font-size: clamp(52px, 8vw, 190px);
+    background: linear-gradient(180deg, #f1f4f7 0%, #c9ced7 22%, #eef4fb 40%, #a4afbb 58%, #edf2f9 76%, #d5dbe2 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 12px rgba(163,181,203,.5));
+}
+
+.brand-row-bottom {
+    font-size: clamp(44px, 6.5vw, 150px);
+    background: linear-gradient(180deg, #ff96a3 0%, #ff1d3e 20%, #ffd0d6 38%, #c20a2d 68%, #ff8c99 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 16px rgba(255,20,55,.67));
+}
+
+.auth-logo {
+    justify-content: center;
+    margin-bottom: 22px;
+}
+
+.brand-image {
+    display: block;
+    object-fit: contain;
+}
+
+.auth-brand-image {
+    width: min(100%, 560px);
+    height: auto;
+    max-height: 270px;
+}
+
+.sidebar-brand-image {
+    width: 160px;
+    height: 64px;
+}
+
+.auth-title {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+.auth-subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 28px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #d9dee6;
+}
+
+.form-input {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #080c12;
+    color: var(--text);
+    outline: none;
+    transition: .2s;
+}
+
+.form-input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(227,38,63,.12);
+}
+
+.primary-btn {
+    width: 100%;
+    border: none;
+    padding: 13px 18px;
+    background: var(--blue);
+    color: white;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: .2s;
+}
+
+.primary-btn:hover {
+    background: var(--blue-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(227,38,63,.25);
+}
+
+.auth-switch {
+    text-align: center;
+    margin-top: 22px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.link {
+    color: #ff6375;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.error {
+    background: rgba(255,77,97,.08);
+    border: 1px solid rgba(255,77,97,.2);
+    color: #ff7887;
+    border-radius: 9px;
+    padding: 11px;
+    font-size: 13px;
+    margin-bottom: 18px;
+    display: none;
+}
+
+.success {
+    background: rgba(53,208,127,.08);
+    border: 1px solid rgba(53,208,127,.2);
+    color: var(--success);
+    border-radius: 9px;
+    padding: 11px;
+    font-size: 13px;
+    margin-bottom: 18px;
+    display: none;
+}
+
+/* =========================
+   APP
+========================= */
+
+.app {
+    display: none;
+    min-height: 100vh;
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.app.showing {
+    display: block;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 245px;
+    background: #070a0f;
+    border-right: 1px solid var(--border);
+    padding: 22px 15px;
+    z-index: 100;
+    transition: width .25s ease, transform .25s ease, background-color .2s ease;
+}
+
+.sidebar.collapsed { width: 78px; }
+.sidebar.collapsed .sidebar-brand-image { width: 42px; object-position: left; }
+.sidebar.collapsed .nav-label,
+.sidebar.collapsed .nav-item span:not(.nav-icon),
+.sidebar.collapsed .profile-copy,
+.sidebar.collapsed .sidebar-brand-lockup { overflow: hidden; }
+.sidebar.collapsed .profile-copy { display: none; }
+.sidebar.collapsed .nav-item { justify-content: center; padding-inline: 8px; }
+.sidebar.collapsed .nav-icon { width: auto; }
+.sidebar.collapsed .sidebar-brand-image { object-fit: cover; object-position: left; }
+
+.sidebar .logo {
+    padding: 0 10px;
+    margin-bottom: 38px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar-brand-lockup {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar-brand-mark {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(255,255,255,1), rgba(182,150,156,.92), rgba(214,25,52,.9));
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,.18),
+        0 8px 14px rgba(16,96,194,.35),
+        inset 0 0 10px rgba(255,255,255,.42),
+        inset 0 -6px 10px rgba(0,0,0,.28);
+    transform: perspective(600px) rotateX(8deg) rotateY(-8deg) rotateZ(-8deg);
+}
+
+.sidebar-brand-mark::before,
+.sidebar-brand-mark::after {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,.4);
+    background: linear-gradient(135deg, rgba(20,25,32,.12), rgba(255,255,255,.12));
+}
+
+.sidebar-brand-mark::after {
+    inset: 14px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, rgba(255,55,79,.95), rgba(141,9,28,.85));
+    box-shadow: inset 0 0 6px rgba(255,255,255,.4);
+}
+
+.sidebar-brand-wordmark {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 0.9;
+    letter-spacing: -0.5px;
+}
+
+.sidebar-brand-word {
+    display: block;
+    text-shadow: 0 2px 4px rgba(0,0,0,.3);
+}
+
+.sidebar-brand-word.top {
+    font-size: 16px;
+    background: linear-gradient(180deg, #f1f4f7 0%, #c9ced7 22%, #eef4fb 40%, #a4afbb 58%, #edf2f9 76%, #d5dbe2 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.sidebar-brand-word.bottom {
+    font-size: 15px;
+    background: linear-gradient(180deg, #ff96a3 0%, #ff1d3e 20%, #ffd0d6 38%, #c20a2d 68%, #ff8c99 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.nav-section {
+    margin-bottom: 24px;
+}
+
+.nav-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #566170;
+    padding: 0 12px;
+    margin-bottom: 8px;
+}
+
+.nav-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    padding: 11px 12px;
+    border-radius: 9px;
+    text-align: left;
+    font-size: 13px;
+    margin-bottom: 3px;
+    transition: .2s;
+    min-height: 42px;
+}
+
+.nav-item:hover {
+    color: white;
+    background: #0c121a;
+}
+
+.nav-item.active {
+    color: white;
+    background: rgba(227,38,63,.12);
+    box-shadow: inset 3px 0 0 var(--blue);
+}
+
+.nav-item.active {
+    background: var(--accent-soft);
+    box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.nav-icon {
+    width: 20px;
+    text-align: center;
+}
+
+.sidebar-bottom {
+    position: absolute;
+    left: 15px;
+    right: 15px;
+    bottom: 20px;
+}
+
+.sidebar-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 10px;
+    margin-bottom: 10px;
+    border-top: 1px solid var(--border);
+}
+
+.sidebar-profile .avatar { flex: 0 0 34px; width: 34px; height: 34px; }
+.sidebar-profile .account-label { margin-bottom: 3px; font-size: 9px; }
+
+.logout-btn {
+    color: #ff6877;
+}
+
+.discord-btn {
+    color: #5865f2;
+    margin-bottom: 8px;
+}
+
+.discord-btn:hover {
+    background: rgba(88, 101, 242, 0.1);
+    color: #7289da;
+}
+
+.main {
+    margin-left: 245px;
+    min-height: 100vh;
+    transition: margin-left .25s ease;
+}
+
+.sidebar.collapsed ~ .main { margin-left: 78px; }
+
+.topbar {
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 35px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(5,7,10,.85);
+    backdrop-filter: blur(15px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.collapse-menu,
+.collapse-menu {
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.collapse-menu { margin-left: auto; }
+
+.user-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--accent), #7f1724);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.user-name {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* =========================
+   UPDATE BANNER
+========================= */
+
+.update-banner {
+    display: none;
+    background: linear-gradient(90deg, rgba(227,38,63,.08) 0%, rgba(227,38,63,.04) 100%);
+    border-bottom: 1px solid rgba(227,38,63,.15);
+    padding: 14px 35px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    animation: slideDown .3s ease;
+}
+
+.update-banner.show {
+    display: flex;
+}
+
+.update-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 250px;
+}
+
+.update-banner-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(227,38,63,.2);
+    border-radius: 8px;
+    color: var(--blue);
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.update-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.update-banner-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.update-banner-version {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.update-banner-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.update-banner-actions button {
+    border: none;
+    padding: 8px 12px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .2s;
+}
+
+.update-banner-download {
+    background: var(--blue);
+    color: white;
+}
+
+.update-banner-download:hover {
+    background: var(--blue-hover);
+}
+
+.update-banner-dismiss {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+}
+
+.update-banner-dismiss:hover {
+    background: rgba(255,255,255,.05);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.content {
+    max-width: 1250px;
+    padding: 38px;
+    margin: auto;
+}
+
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+    animation: pageIn .24s ease both;
+}
+
+@keyframes pageIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.page-header {
+    margin-bottom: 30px;
+}
+
+.page-title {
+    font-size: 27px;
+    margin-bottom: 7px;
+}
+
+.page-description {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+/* =========================
+   CARDS
+========================= */
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    margin-bottom: 28px;
+}
+
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    transition: .2s;
+}
+
+.card:hover {
+    border-color: #233244;
+    transform: translateY(-2px);
+}
+
+.status-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.status-card::after {
+    content: "";
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    right: -30px;
+    top: -30px;
+    background: rgba(227,38,63,.1);
+    border-radius: 50%;
+    filter: blur(5px);
+}
+
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 17px;
+}
+
+.card-label {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.card-icon {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(227,38,63,.1);
+    border-radius: 9px;
+    color: #ff7180;
+}
+
+.card-value {
+    font-size: 21px;
+    font-weight: 700;
+}
+
+.status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    margin-top: 8px;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 8px rgba(53,208,127,.6);
+}
+
+/* =========================
+   ACTIONS
+========================= */
+
+.section-title {
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+.actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.action-card {
+    cursor: pointer;
+    position: relative;
+}
+
+.action-card h3 {
+    font-size: 14px;
+    margin-bottom: 7px;
+}
+
+.action-card p {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.action-arrow {
+    margin-top: 20px;
+    color: var(--blue);
+}
+
+/* =========================
+   DOWNLOAD
+========================= */
+
+.download-card {
+    max-width: 700px;
+    text-align: center;
+    margin: 0 auto 25px;
+    padding: 45px;
+}
+
+.download-icon {
+    width: 65px;
+    height: 65px;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(227,38,63,.12);
+    color: #ff6b7b;
+    border-radius: 18px;
+    font-size: 28px;
+}
+
+.version {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 10px 0 25px;
+}
+
+.download-btn {
+    display: inline-block;
+    width: auto;
+    min-width: 190px;
+}
+
+.changelog {
+    margin-top: 25px;
+    text-align: left;
+}
+
+.changelog-item {
+    padding: 15px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.changelog-item:last-child {
+    border-bottom: none;
+}
+
+.changelog-version {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.changelog-text {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+}
+
+/* =========================
+   CONFIGS
+========================= */
+
+.config-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.small-btn {
+    border: none;
+    background: var(--blue);
+    color: white;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: .2s;
+}
+
+.small-btn:hover {
+    background: var(--blue-hover);
+}
+
+.secondary-btn {
+    border: 1px solid var(--border);
+    background: #0c121a;
+    color: #dbe2ea;
+}
+
+.secondary-btn:hover {
+    background: #111923;
+}
+
+.danger-btn {
+    border: 1px solid rgba(255,77,97,.18);
+    background: rgba(255,77,97,.06);
+    color: #ff6b7b;
+}
+
+.config-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.config-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 18px;
+    border-radius: 12px;
+    transition: .2s;
+}
+
+.config-row:hover {
+    border-color: #26364a;
+}
+
+.config-info h3 {
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.config-info p {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.config-actions {
+    display: flex;
+    gap: 7px;
+}
+
+.config-actions button {
+    border: 1px solid var(--border);
+    background: #0c121a;
+    color: #cdd5df;
+    padding: 8px 10px;
+    border-radius: 7px;
+    font-size: 11px;
+}
+
+.config-actions button:hover {
+    background: #121a24;
+}
+
+.empty {
+    text-align: center;
+    padding: 50px;
+    color: var(--muted);
+}
+
+.empty-icon { font-size: 28px; color: var(--accent); margin-bottom: 14px; }
+.empty h3 { color: var(--text); font-size: 15px; margin-bottom: 7px; }
+.empty p { line-height: 1.6; }
+
+.skeleton {
+    min-height: 18px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, rgba(255,255,255,.05), rgba(227,38,63,.12), rgba(255,255,255,.05));
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer { to { background-position: -200% 0; } }
+
+/* =========================
+   MODAL
+========================= */
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    backdrop-filter: blur(7px);
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.confirm-modal { max-width: 440px; }
+.confirm-modal .danger-title { color: var(--danger); }
+.confirm-modal p { color: var(--muted); font-size: 13px; line-height: 1.6; margin-top: 8px; }
+
+.modal {
+    width: 100%;
+    max-width: 650px;
+    background: #090e15;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 25px;
+    animation: fadeUp .25s ease;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.close-modal {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 22px;
+}
+
+textarea {
+    min-height: 280px;
+    resize: vertical;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.modal-buttons button {
+    width: auto;
+}
+
+/* =========================
+   ACCOUNT
+========================= */
+
+.account-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+.account-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.account-label {
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 8px;
+}
+
+.account-value {
+    font-size: 14px;
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.account-actions {
+    margin-top: 20px;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+}
+
+.settings-row:first-of-type { border-top: 0; }
+.settings-row label { color: var(--muted); font-size: 12px; }
+.settings-row select { min-width: 140px; }
+.accent-options { display: flex; gap: 8px; flex-wrap: wrap; }
+.accent-swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; }
+.accent-swatch.selected { border-color: var(--text); box-shadow: 0 0 0 2px var(--accent); }
+
+.totp-card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.totp-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+    color: var(--muted);
+}
+
+.totp-status.enabled {
+    color: var(--success);
+    border-color: rgba(53,208,127,.2);
+    background: rgba(53,208,127,.08);
+}
+
+.totp-secret-box {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #080c12;
+    color: #dfe8f7;
+    letter-spacing: 1px;
+    font-weight: 600;
+    font-size: 12px;
+    word-break: break-all;
+    display: none;
+}
+
+.totp-code-input {
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    background: #080c12;
+    color: var(--text);
+    border-radius: 10px;
+    outline: none;
+    text-align: center;
+    letter-spacing: 2px;
+    font-size: 20px;
+}
+
+.password-change-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.password-change-grid input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    background: #080c12;
+    color: var(--text);
+    border-radius: 8px;
+    outline: none;
+}
+
+.small-modal {
+    max-width: 420px;
+}
+
+.color-preset {
+    width: 100%;
+    height: 50px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: .2s;
+    border: 2px solid var(--border) !important;
+}
+
+.color-preset:hover {
+    transform: scale(1.05);
+}
+
+/* =========================
+   TOAST
+========================= */
+
+.toast {
+    position: fixed;
+    right: 25px;
+    bottom: 25px;
+    background: #0d141d;
+    border: 1px solid var(--border);
+    color: white;
+    padding: 13px 17px;
+    border-radius: 10px;
+    font-size: 12px;
+    box-shadow: 0 15px 40px rgba(0,0,0,.35);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: .3s;
+    z-index: 1000;
+}
+
+.toast.success { border-color: rgba(53,208,127,.35); }
+.toast.error { border-color: rgba(255,77,97,.4); }
+.toast.warning { border-color: rgba(245,185,66,.4); }
+.toast.info { border-color: var(--accent-border); }
+
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* =========================
+   ANIMATION
+========================= */
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =========================
+   STARS
+========================= */
+
+.stars-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
+    animation: moveStars linear infinite;
+}
+
+@keyframes moveStars {
+    from {
+        transform: translateY(0px);
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-100vh);
+        opacity: 0.3;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="loading-screen" id="loadingScreen" aria-live="polite">
+    <div class="loading-brand">
+        <img src="Screenshot_2026-08-18_012012.png" alt="StrikeMenu">
+        <div class="loading-spinner" aria-label="Loading"></div>
+    </div>
+</div>
+
+<!-- =========================================================
+     STARS BACKGROUND
+========================================================= -->
+
+<div class="stars-container" id="starsContainer"></div>
+
+<!-- =========================================================
+     LOGIN
+========================================================= -->
+
+<div class="auth-container" id="authContainer">
+
+    <div class="auth-card" id="loginCard">
+
+        <div class="brand-lockup auth-logo">
+            <img class="brand-image auth-brand-image" src="Screenshot_2026-08-18_012012.png" alt="Strike Solutions">
+        </div>
+
+        <h1 class="auth-title">Welcome back</h1>
+
+        <p class="auth-subtitle">
+            Sign in to access your customer dashboard.
+        </p>
+
+        <div class="error" id="loginError"></div>
+
+        <div class="form-group">
+            <label class="form-label">Username</label>
+            <input
+                class="form-input"
+                id="loginUsername"
+                type="text"
+                placeholder="Enter your username"
+            >
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Password</label>
+            <input
+                class="form-input"
+                id="loginPassword"
+                type="password"
+                placeholder="Enter your password"
+            >
+        </div>
+
+        <button class="primary-btn" onclick="login()">
+            Login
+        </button>
+
+        <div class="auth-switch">
+            Don't have an account?
+            <span class="link" onclick="showRegister()">Register</span>
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         REGISTER
+    ====================================================== -->
+
+    <div class="auth-card" id="registerCard" style="display:none;">
+
+        <div class="brand-lockup auth-logo">
+            <img class="brand-image auth-brand-image" src="Screenshot_2026-08-18_012012.png" alt="Strike Solutions">
+        </div>
+
+        <h1 class="auth-title">Create account</h1>
+
+        <p class="auth-subtitle">
+            Create your customer account.
+        </p>
+
+        <div class="error" id="registerError"></div>
+
+        <div class="success" id="registerSuccess"></div>
+
+        <div class="form-group">
+            <label class="form-label">Username</label>
+
+            <input
+                class="form-input"
+                id="registerUsername"
+                type="text"
+                placeholder="Choose a username"
+            >
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">License Key</label>
+
+            <input
+                class="form-input"
+                id="registerLicenseKey"
+                type="text"
+                placeholder="Enter your license key"
+            >
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Password</label>
+
+            <input
+                class="form-input"
+                id="registerPassword"
+                type="password"
+                placeholder="Create a password"
+            >
+        </div>
+
+        <button class="primary-btn" onclick="register()">
+            Register
+        </button>
+
+        <div class="auth-switch">
+            Already have an account?
+            <span class="link" onclick="showLogin()">Login</span>
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     APP
+========================================================= -->
+
+<div class="app" id="app">
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar" id="sidebar">
+
+        <div class="logo">
+            <div class="sidebar-brand-lockup">
+                <img class="brand-image sidebar-brand-image" src="Screenshot_2026-08-18_012012.png" alt="Strike Solutions">
+            </div>
+            <button class="collapse-menu" type="button" onclick="toggleSidebarCollapse()" aria-label="Collapse sidebar" title="Collapse sidebar">‹</button>
+        </div>
+
+        <div class="nav-section">
+
+            <div class="nav-label">
+                Main
+            </div>
+
+            <button
+                class="nav-item discord-btn"
+                onclick="openDiscord()"
+            >
+                <span class="nav-icon">💬</span>
+                <span>Discord</span>
+            </button>
+
+            <button
+                class="nav-item active"
+                data-page="dashboard"
+                onclick="navigate('dashboard')"
+            >
+                <span class="nav-icon">⌂</span>
+                <span>Dashboard</span>
+            </button>
+
+            <button
+                class="nav-item"
+                data-page="download"
+                onclick="navigate('download')"
+            >
+                <span class="nav-icon">↓</span>
+                <span>Download</span>
+            </button>
+
+            <button
+                class="nav-item"
+                data-page="configs"
+                onclick="navigate('configs')"
+            >
+                <span class="nav-icon">◇</span>
+                <span>My Configs</span>
+            </button>
+
+            <button class="nav-item" data-page="support" onclick="navigate('support')">
+                <span class="nav-icon">?</span>
+                <span>Support</span>
+            </button>
+
+        </div>
+
+
+        <div class="nav-section">
+
+            <div class="nav-label">
+                Account
+            </div>
+
+            <button
+                class="nav-item"
+                data-page="account"
+                onclick="navigate('account')"
+            >
+                <span class="nav-icon">○</span>
+                <span>Account Settings</span>
+            </button>
+
+            <button
+                class="nav-item"
+                onclick="openBuyNow()"
+            >
+                <span class="nav-icon">🛒</span>
+                <span>Buy Now</span>
+            </button>
+
+            <button class="nav-item" data-page="store" onclick="navigate('store')">
+                <span class="nav-icon">$</span>
+                <span>Store</span>
+            </button>
+
+        </div>
+
+
+        <div class="sidebar-bottom">
+
+            <div class="sidebar-profile">
+                <div class="avatar" id="sidebarAvatar">U</div>
+                <div class="profile-copy">
+                    <div class="account-label">SIGNED IN AS</div>
+                    <div class="user-name" id="sidebarUsername">User</div>
+                </div>
+            </div>
+
+            <button
+                class="nav-item logout-btn"
+                onclick="logout()"
+            >
+                <span class="nav-icon">↪</span>
+                <span>Logout</span>
+            </button>
+
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN -->
+
+    <main class="main">
+
+        <header class="topbar">
+
+            <div></div>
+
+            <div class="user-area">
+
+                <div>
+                    <div class="user-name" id="topUsername">
+                        User
+                    </div>
+                </div>
+
+                <div class="avatar" id="avatar">
+                    U
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <div class="update-banner" id="updateBanner">
+            <div class="update-banner-content">
+                <div class="update-banner-icon">📦</div>
+                <div class="update-banner-text">
+                    <div class="update-banner-title">New loader version available</div>
+                    <div class="update-banner-version">
+                        Current: <strong>v1.4.2</strong> → Latest: <strong id="latestVersionText">v1.5.0</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="update-banner-actions">
+                <button class="update-banner-download" onclick="downloadUpdater()">Download Now</button>
+                <button class="update-banner-dismiss" onclick="dismissUpdateBanner()">Dismiss</button>
+            </div>
+        </div>
+
+
+        <div class="content">
+
+
+            <!-- =================================================
+                 DASHBOARD
+            ================================================== -->
+
+            <section class="page active" id="page-dashboard">
+
+                <div class="page-header">
+                    <h1 class="page-title">Welcome back, <span id="welcomeUsername">User</span></h1>
+                    <p class="page-description">Manage your license, loader and configurations.</p>
+                </div>
+
+                <div class="cards">
+                    <div class="card status-card">
+                        <div class="card-top"><div class="card-label">LICENSE STATUS</div><div class="card-icon">✓</div></div>
+                        <div class="card-value skeleton" id="licenseStatus">Unavailable</div>
+                        <div class="status"><span class="status-dot"></span><span id="licenseStatusText">Unavailable</span></div>
+                    </div>
+                    <div class="card status-card">
+                        <div class="card-top"><div class="card-label">HWID STATUS</div><div class="card-icon">#</div></div>
+                        <div class="card-value skeleton" id="hwidStatus">Unavailable</div>
+                        <div class="status"><span class="status-dot"></span><span id="hwidStatusText">Unavailable</span></div>
+                    </div>
+                </div>
+
+                <h2 class="section-title">Quick Actions</h2>
+                <div class="actions">
+                    <div class="card action-card" onclick="navigate('download')"><h3>Download Loader</h3><p>Download the latest version of the loader.</p><div class="action-arrow">→</div></div>
+                    <div class="card action-card" onclick="navigate('configs')"><h3>My Configs</h3><p>Create and manage your configurations.</p><div class="action-arrow">→</div></div>
+                    <div class="card action-card" onclick="navigate('account')"><h3>Account Settings</h3><p>View your account and license information.</p><div class="action-arrow">→</div></div>
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 DOWNLOAD
+            ================================================== -->
+
+            <section class="page" id="page-download">
+
+                <div class="page-header">
+
+                    <h1 class="page-title">
+                        Download
+                    </h1>
+
+                    <p class="page-description">
+                        Download the latest loader version.
+                    </p>
+
+                </div>
+
+
+                <div class="card download-card">
+
+                    <div class="download-icon">
+                        ↓
+                    </div>
+
+                    <h2>
+                        StrikeMenu Loader
+                    </h2>
+
+                    <div class="version">
+                        Latest Version: <strong>v1.4.2</strong>
+                    </div>
+
+                    <button
+                        class="primary-btn download-btn"
+                        onclick="downloadLoader()"
+                    >
+                        ↓ &nbsp; Download StrikeMenu
+                    </button>
+
+                    <div class="changelog">
+
+                        <h3 class="section-title">
+                            Changelog
+                        </h3>
+
+                        <div class="changelog-item">
+
+                            <div class="changelog-version">
+                                v1.4.2
+                            </div>
+
+                            <div class="changelog-text">
+                                Improved performance<br>
+                                Fixed configuration issues<br>
+                                General stability improvements
+                            </div>
+
+                        </div>
+
+                        <div class="changelog-item">
+
+                            <div class="changelog-version">
+                                v1.4.1
+                            </div>
+
+                            <div class="changelog-text">
+                                Improved startup time<br>
+                                UI improvements
+                            </div>
+
+                        </div>
+
+                        <div class="changelog-item">
+
+                            <div class="changelog-version">
+                                v1.4.0
+                            </div>
+
+                            <div class="changelog-text">
+                                Added new configuration system<br>
+                                Added account management
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- =================================================
+                 CONFIGS
+            ================================================== -->
+
+            <section class="page" id="page-configs">
+
+                <div class="page-header">
+
+                    <h1 class="page-title">
+                        My Configs
+                    </h1>
+
+                    <p class="page-description">
+                        Create, edit and manage your configurations.
+                    </p>
+
+                </div>
+
+
+                <div class="config-header">
+
+                    <div>
+                        <h2 class="section-title" style="margin:0;">
+                            Your Configurations
+                        </h2>
+                    </div>
+
+                    <button
+                        class="small-btn"
+                        onclick="openConfigModal()"
+                    >
+                        + Create Config
+                    </button>
+
+                </div>
+
+
+                <div
+                    class="config-list"
+                    id="configList"
+                ></div>
+
+            </section>
+
+
+            <section class="page" id="page-support">
+                <div class="page-header">
+                    <h1 class="page-title">Support</h1>
+                    <p class="page-description">Get help with your StrikeMenu account.</p>
+                </div>
+                <div class="card empty">
+                    <div class="empty-icon">?</div>
+                    <h3>No support requests</h3>
+                    <p>Create a support request if you need help.</p>
+                    <button class="small-btn" onclick="openDiscord()">Open Discord Support</button>
+                </div>
+            </section>
+
+            <section class="page" id="page-store">
+                <div class="page-header">
+                    <h1 class="page-title">Store</h1>
+                    <p class="page-description">Manage products and license upgrades.</p>
+                </div>
+                <div class="card empty">
+                    <div class="empty-icon">$</div>
+                    <h3>Store coming soon</h3>
+                    <p>Available products will appear here.</p>
+                    <button class="small-btn" onclick="openBuyNow()">Visit Store</button>
+                </div>
+            </section>
+
+            <!-- =================================================
+                 ACCOUNT
+            ================================================== -->
+
+            <section class="page" id="page-account">
+
+                <div class="page-header">
+
+                    <h1 class="page-title">
+                        Account Settings
+                    </h1>
+
+                    <p class="page-description">
+                        View your account and license information.
+                    </p>
+
+                </div>
+
+
+                <div class="account-grid">
+
+                    <div class="account-item">
+
+                        <div class="account-label">
+                            USERNAME
+                        </div>
+
+                        <div
+                            class="account-value skeleton"
+                            id="accountUsername"
+                        >
+                            username
+                        </div>
+
+                    </div>
+
+
+                    <div class="account-item">
+
+                        <div class="account-label">
+                            LICENSE
+                        </div>
+
+                        <div
+                            class="account-value skeleton"
+                            id="accountLicense"
+                        >
+                            Unavailable
+                        </div>
+
+                    </div>
+
+
+                    <div class="account-item">
+
+                        <div class="account-label">
+                            LICENSE KEY
+                        </div>
+
+                        <div
+                            class="account-value skeleton"
+                            id="licenseKey"
+                        >
+                            Unavailable
+                        </div>
+
+                    </div>
+
+
+                    <div class="account-item">
+
+                        <div class="account-label">
+                            HWID
+                        </div>
+
+                        <div
+                            class="account-value skeleton"
+                            id="accountHwid"
+                        >
+                            Unavailable
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="card account-actions">
+
+                    <h3 style="font-size:14px;margin-bottom:7px;">
+                        Redeem Key
+                    </h3>
+
+                    <p style="font-size:12px;color:var(--muted);margin-bottom:15px;">
+                        Enter a license key to redeem and activate your account.
+                    </p>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input 
+                            type="text" 
+                            id="redeemKeyInput" 
+                            placeholder="Enter your license key..."
+                            style="flex: 1; min-width: 200px; padding: 10px 14px; border: 1px solid var(--border); background: #080c12; color: var(--text); border-radius: 8px; outline: none;"
+                        >
+                        <button
+                            class="small-btn"
+                            onclick="redeemKey()"
+                        >
+                            Redeem
+                        </button>
+                    </div>
+
+                </div>
+
+                <div class="card account-actions" id="totpSettingsCard">
+
+                    <h3 style="font-size:14px;margin-bottom:7px;">
+                        Two-Factor Authentication
+                    </h3>
+
+                    <p style="font-size:12px;color:var(--muted);margin-bottom:15px;">
+                        Secure your account with a TOTP authenticator app.
+                    </p>
+
+                    <div class="totp-card-row">
+                        <div class="totp-status" id="totpStatus">Disabled</div>
+                        <button
+                            class="small-btn"
+                            id="totpToggleBtn"
+                            onclick="toggleTotpSetup()"
+                        >
+                            Enable 2FA
+                        </button>
+                    </div>
+
+                    <div id="totpHint" style="display:none;font-size:12px;color:var(--muted);margin-top:12px;">
+                        Use an authenticator app such as Google Authenticator or Authy.
+                    </div>
+
+                </div>
+
+                <div class="card account-actions">
+
+                    <h3 style="font-size:14px;margin-bottom:7px;">
+                        Background Color
+                    </h3>
+
+                    <p style="font-size:12px;color:var(--muted);margin-bottom:15px;">
+                        Customize your dashboard background color.
+                    </p>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input 
+                            type="color" 
+                            id="bgColorPicker" 
+                            style="width: 60px; height: 40px; border: none; border-radius: 8px; cursor: pointer;"
+                        >
+                        <button
+                            class="small-btn"
+                            onclick="applyBackgroundColor()"
+                        >
+                            Apply
+                        </button>
+                        <button
+                            class="small-btn secondary-btn"
+                            onclick="resetBackgroundColor()"
+                        >
+                            Reset
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 15px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                        <button class="color-preset" onclick="setQuickColor('#05070a')" style="background: #05070a; border: 2px solid var(--border);"></button>
+                        <button class="color-preset" onclick="setQuickColor('#280a10')" style="background: #280a10; border: 2px solid var(--border);"></button>
+                        <button class="color-preset" onclick="setQuickColor('#2e0a1a')" style="background: #2e0a1a; border: 2px solid var(--border);"></button>
+                        <button class="color-preset" onclick="setQuickColor('#2e0a12')" style="background: #2e0a12; border: 2px solid var(--border);"></button>
+                    </div>
+
+                </div>
+
+                <div class="card account-actions">
+                    <h3 style="font-size:14px;margin-bottom:7px;">Appearance</h3>
+                    <p style="font-size:12px;color:var(--muted);margin-bottom:15px;">Customize the dashboard without changing authentication.</p>
+                    <div class="settings-row">
+                        <label for="themeSelect">Theme</label>
+                        <select class="form-input" id="themeSelect" onchange="setTheme(this.value)">
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                            <option value="system">System</option>
+                        </select>
+                    </div>
+                    <div class="settings-row">
+                        <label>Accent colour</label>
+                        <div class="accent-options" role="group" aria-label="Accent colour">
+                            <button class="accent-swatch selected" style="background:#e3263f" data-accent="#e3263f" onclick="setAccent('#e3263f')" aria-label="Red"></button>
+                            <button class="accent-swatch" style="background:#d97706" data-accent="#d97706" onclick="setAccent('#d97706')" aria-label="Amber"></button>
+                            <button class="accent-swatch" style="background:#0891b2" data-accent="#0891b2" onclick="setAccent('#0891b2')" aria-label="Cyan"></button>
+                            <button class="accent-swatch" style="background:#db2777" data-accent="#db2777" onclick="setAccent('#db2777')" aria-label="Pink"></button>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+        </div>
+
+    </main>
+
+</div>
+
+
+<!-- =========================================================
+     CONFIG MODAL
+========================================================= -->
+
+<div
+    class="modal-overlay"
+    id="configModal"
+>
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <div>
+
+                <h2 style="font-size:18px;" id="modalTitle">
+                    Create Config
+                </h2>
+
+                <p
+                    style="font-size:12px;color:var(--muted);margin-top:5px;"
+                >
+                    Enter your configuration JSON.
+                </p>
+
+            </div>
+
+            <button
+                class="close-modal"
+                onclick="closeConfigModal()"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label class="form-label">
+                Config Name
+            </label>
+
+            <input
+                class="form-input"
+                id="configName"
+                placeholder="My Config"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label class="form-label">
+                JSON Configuration
+            </label>
+
+            <textarea
+                class="form-input"
+                id="configJson"
+                spellcheck="false"
+            >{
+  "name": "My Config",
+  "settings": {
+    "example": true
+  }
+}</textarea>
+
+        </div>
+
+
+        <div class="modal-buttons">
+
+            <button
+                class="small-btn secondary-btn"
+                onclick="closeConfigModal()"
+            >
+                Cancel
+            </button>
+
+            <button
+                class="small-btn"
+                onclick="saveConfig()"
+            >
+                Save Config
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     2FA MODAL
+========================================================= -->
+
+<div class="modal-overlay" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+    <div class="modal confirm-modal">
+        <div class="modal-header">
+            <div>
+                <h2 style="font-size:18px;" id="confirmModalTitle">Confirm action</h2>
+                <p id="confirmModalText">Are you sure you want to continue?</p>
+            </div>
+            <button class="close-modal" onclick="closeConfirmModal()" aria-label="Close confirmation">×</button>
+        </div>
+        <div class="modal-buttons">
+            <button class="small-btn secondary-btn" onclick="closeConfirmModal()">Cancel</button>
+            <button class="small-btn danger-btn" id="confirmModalButton" onclick="runConfirmedAction()">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<div
+    class="modal-overlay"
+    id="totpModal"
+>
+
+    <div class="modal small-modal">
+
+        <div class="modal-header">
+
+            <div>
+                <h2 style="font-size:18px;" id="totpModalTitle">
+                    Verify 2FA
+                </h2>
+                <p style="font-size:12px;color:var(--muted);margin-top:5px;" id="totpModalText">
+                    Enter the 6-digit code from your authenticator app.
+                </p>
+            </div>
+
+            <button
+                class="close-modal"
+                onclick="closeTotpModal()"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div class="totp-secret-box" id="totpSecretBox"></div>
+
+        <input
+            class="totp-code-input"
+            id="totpCodeInput"
+            type="text"
+            maxlength="6"
+            inputmode="numeric"
+            placeholder="000000"
+        >
+
+        <div class="modal-buttons">
+            <button
+                class="small-btn secondary-btn"
+                onclick="closeTotpModal()"
+            >
+                Cancel
+            </button>
+            <button
+                class="small-btn"
+                id="totpConfirmBtn"
+                onclick="confirmTotpAction()"
+            >
+                Confirm
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     TOAST
+========================================================= -->
+
+<div
+    class="toast"
+    id="toast"
+></div>
+
+
+<script>
+
+/* =========================================================
+   STORAGE
+========================================================= */
+
+const STORAGE_CONFIGS = "strikmenu_configs";
+const STORAGE_DISMISSED_UPDATE = "strikmenu_dismissed_update";
+
+let editingConfigId = null;
+let currentUser = null;
+const CURRENT_VERSION = "1.4.2";
+const LATEST_VERSION = "1.5.0";
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+    createStars();
+
+    loadBackgroundColor();
+    applyTheme(localStorage.getItem("strikmenu_theme") || "system");
+    applyAccent(localStorage.getItem("strikmenu_accent") || "#e3263f");
+
+    checkForUpdates();
+
+    try {
+        await restoreSession();
+    } finally {
+        document.getElementById("loadingScreen")?.classList.add("hidden");
+    }
+
+});
+
+
+/* =========================================================
+   AUTH
+========================================================= */
+
+function showLogin() {
+
+    const loginCard = document.getElementById("loginCard");
+    const registerCard = document.getElementById("registerCard");
+
+    loginCard.style.display = "block";
+    registerCard.style.display = "none";
+
+    loginCard.classList.remove("reveal");
+    void loginCard.offsetWidth;
+    loginCard.classList.add("reveal");
+
+}
+
+
+function showRegister() {
+
+    const loginCard = document.getElementById("loginCard");
+    const registerCard = document.getElementById("registerCard");
+
+    loginCard.style.display = "none";
+    registerCard.style.display = "block";
+
+    registerCard.classList.remove("reveal");
+    void registerCard.offsetWidth;
+    registerCard.classList.add("reveal");
+
+}
+
+
+let pendingTotpUser = null;
+let pendingTotpMode = "login";
+let pendingTotpSecret = "";
+
+function getClientHwid() {
+    const storageKey = "strikemenu_client_hwid";
+    let hwid = localStorage.getItem(storageKey);
+    if (!hwid) {
+        hwid = crypto.randomUUID();
+        localStorage.setItem(storageKey, hwid);
+    }
+    return hwid;
+}
+
+
+async function login() {
+    const username = document.getElementById("loginUsername").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    const error = document.getElementById("loginError");
+    error.style.display = "none";
+
+    if (!username || !password) {
+        showError(error, "Please enter your username and password.");
+        return;
+    }
+
+    try {
+        const result = await apiRequest("/api/auth/login", {
+            method: "POST",
+            body: { username, password, hwid: getClientHwid() }
+        });
+        showApp(result.user);
+    } catch (requestError) {
+        showError(error, requestError.message);
+    }
+}
+
+
+async function register() {
+    const username = document.getElementById("registerUsername").value.trim();
+    const password = document.getElementById("registerPassword").value;
+    const license = document.getElementById("registerLicenseKey").value.trim();
+    const error = document.getElementById("registerError");
+    const success = document.getElementById("registerSuccess");
+    error.style.display = "none";
+    success.style.display = "none";
+
+    if (username.length < 3 || password.length < 1 || !license) {
+        showError(error, "Username, password and license key are required.");
+        return;
+    }
+
+    try {
+        const result = await apiRequest("/api/auth/register", {
+            method: "POST",
+            body: { username, password, license, hwid: getClientHwid() }
+        });
+        showApp(result.user);
+    } catch (requestError) {
+        showError(error, requestError.message);
+    }
+}
+
+
+async function logout() {
+    openConfirmModal("Log out?", "Your current KeyAuth session will be ended.", async () => {
+        try {
+            await apiRequest("/api/auth/logout", { method: "POST" });
+            currentUser = null;
+            document.getElementById("app").style.display = "none";
+            document.getElementById("authContainer").style.display = "flex";
+            showLogin();
+            showToast("Logged out.", "success");
+        } catch (requestError) {
+            showToast(requestError.message, "error");
+        }
+    });
+}
+
+function openDiscord() {
+
+    window.open("https://discord.gg/DDmBn2UKrZ", "_blank");
+
+}
+
+function openBuyNow() {
+
+    window.open("", "_blank");
+
+}
+
+function checkForUpdates() {
+
+    const dismissed = localStorage.getItem(STORAGE_DISMISSED_UPDATE);
+
+    if (dismissed === LATEST_VERSION) {
+        return;
+    }
+
+    if (LATEST_VERSION > CURRENT_VERSION) {
+        document.getElementById("latestVersionText").textContent = LATEST_VERSION;
+        document.getElementById("updateBanner").classList.add("show");
+    }
+
+}
+
+function downloadUpdater() {
+
+    const content = `StrikeMenu Loader Update\nVersion: ${LATEST_VERSION}\n\nChangelog:\n- Major performance improvements\n- Enhanced security features\n- UI refinements\n- Bug fixes\n\nReplace this with your real update package.`;
+
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `strikmenu-loader-${LATEST_VERSION}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    localStorage.setItem(STORAGE_DISMISSED_UPDATE, LATEST_VERSION);
+    document.getElementById("updateBanner").classList.remove("show");
+
+    showToast("Update downloaded. Please extract and run the installer.");
+
+}
+
+function dismissUpdateBanner() {
+
+    localStorage.setItem(STORAGE_DISMISSED_UPDATE, LATEST_VERSION);
+    document.getElementById("updateBanner").classList.remove("show");
+
+}
+
+async function redeemKey() {
+    const keyInput = document.getElementById("redeemKeyInput");
+    const license = keyInput.value.trim();
+    if (!license) {
+        showToast("Please enter a license key.");
+        return;
+    }
+
+    try {
+        await apiRequest("/api/license/redeem", {
+            method: "POST",
+            body: { license }
+        });
+        keyInput.value = "";
+        await loadAccount();
+        showToast("License redeemed successfully.");
+    } catch (requestError) {
+        showToast(requestError.message);
+    }
+}
+
+
+async function apiRequest(path, options = {}) {
+    const localDevOrigin =
+        window.location.protocol === "file:" ||
+        ((window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") &&
+            window.location.port !== "3000");
+    const apiOrigin = localDevOrigin ? "http://localhost:3000" : "";
+    const request = {
+        method: options.method || "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" }
+    };
+    if (options.body !== undefined) {
+        request.body = JSON.stringify(options.body);
+    }
+
+    const response = await fetch(apiOrigin + path, request);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(payload.error || "Request failed.");
+    }
+    return payload;
+}
+
+
+async function restoreSession() {
+    try {
+        const result = await apiRequest("/api/auth/session");
+        showApp(result.user);
+    } catch {
+        currentUser = null;
+        showLogin();
+        loadConfigs();
+    }
+}
+
+
+function showApp(user) {
+    currentUser = user;
+    const username = user.username || "Unavailable";
+
+    const app = document.getElementById("app");
+    const authContainer = document.getElementById("authContainer");
+
+    authContainer.style.display = "none";
+    app.style.display = "block";
+    app.classList.remove("showing");
+
+    requestAnimationFrame(() => {
+        app.classList.add("showing");
+    });
+
+    document.getElementById("topUsername").textContent =
+        username;
+
+    document.getElementById("welcomeUsername").textContent =
+        username;
+
+    document.getElementById("accountUsername").textContent =
+        username;
+
+
+    document.getElementById("avatar").textContent =
+        username.charAt(0).toUpperCase();
+    document.getElementById("sidebarAvatar").textContent =
+        username.charAt(0).toUpperCase();
+    document.getElementById("sidebarUsername").textContent = username;
+
+
+    updateAccountInfo(user);
+    loadAccount().catch(requestError => showToast(requestError.message));
+
+    loadConfigs();
+}
+
+
+async function loadAccount() {
+    const result = await apiRequest("/api/account");
+    currentUser = result.user;
+    updateAccountInfo(currentUser);
+    return currentUser;
+}
+
+
+function openTotpModal(title, text, mode) {
+
+    const modal = document.getElementById("totpModal");
+    const titleEl = document.getElementById("totpModalTitle");
+    const textEl = document.getElementById("totpModalText");
+    const secretEl = document.getElementById("totpSecretBox");
+    const codeInput = document.getElementById("totpCodeInput");
+    const confirmBtn = document.getElementById("totpConfirmBtn");
+
+    pendingTotpMode = mode || "login";
+    titleEl.textContent = title || "Verify 2FA";
+    textEl.textContent = text || "Enter the 6-digit code from your authenticator app.";
+
+    if (pendingTotpMode === "setup") {
+        secretEl.style.display = "block";
+        secretEl.textContent = pendingTotpSecret;
+        confirmBtn.textContent = "Activate";
+    } else {
+        secretEl.style.display = "none";
+        confirmBtn.textContent = "Confirm";
+    }
+
+    codeInput.value = "";
+    codeInput.focus();
+    modal.classList.add("active");
+
+}
+
+
+function closeTotpModal() {
+
+    document.getElementById("totpModal").classList.remove("active");
+    document.getElementById("totpCodeInput").value = "";
+    pendingTotpMode = "login";
+}
+
+
+async function verifyTotp(secret, code) {
+
+    const normalizedSecret = (secret || "").replace(/\s+/g, "").toUpperCase();
+    const normalizedCode = (code || "").replace(/\D/g, "");
+
+    if (!normalizedSecret || normalizedCode.length !== 6) {
+        return false;
+    }
+
+    const now = Date.now();
+
+    for (let offset = -1; offset <= 1; offset++) {
+
+        const currentCode = await generateTotpCode(normalizedSecret, now + offset * 30000);
+
+        if (currentCode === normalizedCode) {
+            return true;
+        }
+
+    }
+
+    return false;
+
+}
+
+
+async function confirmTotpAction() {
+    showToast("Two-factor setup is not available through the requested KeyAuth endpoints.");
+    closeTotpModal();
+    return;
+
+}
+
+
+function toggleTotpSetup() {
+    showToast("Two-factor setup is not available through the requested KeyAuth endpoints.");
+
+}
+
+
+function updateTotpSettingsUI(username) {
+    const status = document.getElementById("totpStatus");
+    const button = document.getElementById("totpToggleBtn");
+    const hint = document.getElementById("totpHint");
+
+    if (!status || !button || !hint) {
+        return;
+    }
+
+    status.textContent = "Unavailable";
+    status.classList.remove("enabled");
+    button.textContent = "Unavailable";
+    button.disabled = true;
+    hint.textContent = "Two-factor setup is not exposed by the requested backend API.";
+    hint.style.display = "block";
+
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+function navigate(page) {
+
+    document.querySelectorAll(".page").forEach(
+        section => section.classList.remove("active")
+    );
+
+
+    const target =
+        document.getElementById(
+            "page-" + page
+        );
+
+
+    if (target) {
+        target.classList.add("active");
+    }
+
+
+    document.querySelectorAll(".nav-item").forEach(
+        item => item.classList.remove("active")
+    );
+
+
+    const nav =
+        document.querySelector(
+            `.nav-item[data-page="${page}"]`
+        );
+
+
+    if (nav) {
+        nav.classList.add("active");
+    }
+
+
+}
+
+
+function toggleSidebarCollapse() {
+    const sidebar = document.getElementById("sidebar");
+    const collapsed = sidebar.classList.toggle("collapsed");
+    const button = document.querySelector(".collapse-menu");
+    button.textContent = collapsed ? "›" : "‹";
+    button.setAttribute("aria-label", collapsed ? "Expand sidebar" : "Collapse sidebar");
+
+}
+
+
+function applyTheme(theme) {
+    const root = document.documentElement;
+    const effective = theme === "system"
+        ? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
+        : theme;
+    root.dataset.theme = effective;
+    root.style.setProperty("--bg", effective === "light"
+        ? "#f5f6f8"
+        : (localStorage.getItem("strikmenu_bgColor") || "#05070a"));
+    const selector = document.getElementById("themeSelect");
+    if (selector) selector.value = theme;
+}
+
+
+function setTheme(theme) {
+    localStorage.setItem("strikmenu_theme", theme);
+    applyTheme(theme);
+    showToast("Theme updated.", "success");
+}
+
+
+function applyAccent(color) {
+    const root = document.documentElement;
+    root.style.setProperty("--accent", color);
+    root.style.setProperty("--blue", color);
+    root.style.setProperty("--accent-hover", color);
+    root.style.setProperty("--accent-soft", `${color}1f`);
+    root.style.setProperty("--accent-border", `${color}66`);
+    document.querySelectorAll(".accent-swatch").forEach(swatch => {
+        swatch.classList.toggle("selected", swatch.dataset.accent.toLowerCase() === color.toLowerCase());
+    });
+
+}
+
+
+function setAccent(color) {
+    localStorage.setItem("strikmenu_accent", color);
+    applyAccent(color);
+    showToast("Accent colour updated.", "success");
+
+}
+
+
+let confirmedAction = null;
+
+function openConfirmModal(title, text, action) {
+    document.getElementById("confirmModalTitle").textContent = title;
+    document.getElementById("confirmModalText").textContent = text;
+    confirmedAction = action;
+    document.getElementById("confirmModal").classList.add("active");
+    document.getElementById("confirmModalButton").focus();
+}
+
+function closeConfirmModal() {
+    document.getElementById("confirmModal").classList.remove("active");
+    confirmedAction = null;
+}
+
+function runConfirmedAction() {
+    const action = confirmedAction;
+    closeConfirmModal();
+    if (action) action();
+
+}
+
+
+/* =========================================================
+   ACCOUNT
+========================================================= */
+
+function updateAccountInfo(user) {
+
+    if (!user) {
+        return;
+    }
+
+    const subscription = user.subscriptions && user.subscriptions[0];
+    const expiry = Number(subscription?.expiry || 0);
+    const secondsRemaining = Number(subscription?.timeleft || expiry - Math.floor(Date.now() / 1000));
+    const licenseState = secondsRemaining > 0 ? "Active" : "Expired";
+    const licenseName = subscription?.subscription || "Unavailable";
+    const hwidAvailable = user.hwid && user.hwid !== "Unavailable";
+    ["licenseStatus", "hwidStatus", "accountUsername", "accountLicense", "licenseKey", "accountHwid"]
+        .forEach(id => document.getElementById(id)?.classList.remove("skeleton"));
+    document.getElementById("licenseStatus").textContent = formatRemainingTime(secondsRemaining);
+    document.getElementById("licenseStatusText").textContent = licenseState;
+    document.getElementById("accountLicense").textContent =
+        expiry ? `${licenseName} - Expires ${new Date(expiry * 1000).toLocaleString()}` : licenseName;
+    document.getElementById("licenseKey").textContent =
+        subscription?.key || "Unavailable";
+    document.getElementById("accountHwid").textContent = user.hwid || "Unavailable";
+    document.getElementById("hwidStatus").textContent = hwidAvailable ? "Linked" : "Unavailable";
+    document.getElementById("hwidStatusText").textContent = hwidAvailable ? "Protected" : "Unavailable";
+    updateTotpSettingsUI();
+
+}
+
+
+function formatRemainingTime(seconds) {
+    if (!Number.isFinite(seconds) || seconds <= 0) {
+        return "Expired";
+    }
+
+    const remainingDays = Math.floor(seconds / 86400);
+    const years = Math.floor(remainingDays / 365);
+    const months = Math.floor((remainingDays % 365) / 30);
+    const days = remainingDays % 30;
+
+    if (years > 0) {
+        return `${years}y ${months}mo remaining`;
+    }
+    if (months > 0) {
+        return `${months}mo ${days}d remaining`;
+    }
+    if (days > 0) {
+        return `${days}d remaining`;
+    }
+
+    return `${Math.max(1, Math.floor(seconds / 3600))}h remaining`;
+}
+
+
+/* =========================================================
+   CONFIGS
+========================================================= */
+
+function getAllConfigs() {
+
+    return JSON.parse(
+        localStorage.getItem(STORAGE_CONFIGS) || "[]"
+    );
+
+}
+
+
+function saveAllConfigs(configs) {
+
+    localStorage.setItem(
+        STORAGE_CONFIGS,
+        JSON.stringify(configs)
+    );
+
+}
+
+
+function loadConfigs() {
+    const username = currentUser?.username;
+
+    const list =
+        document.getElementById("configList");
+
+
+    if (!list) {
+        return;
+    }
+
+
+    let configs =
+        getAllConfigs().filter(
+            config => config.owner === username
+        );
+
+
+    if (configs.length === 0) {
+
+        list.innerHTML = `
+            <div class="card empty">
+                <div class="empty-icon">◇</div>
+                <h3>No configurations yet</h3>
+                <p>Create your first configuration to get started.</p>
+                <button class="small-btn" onclick="openConfigModal()" style="margin-top:15px;">Create Config</button>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    list.innerHTML = configs.map(config => `
+
+        <div class="config-row">
+
+            <div class="config-info">
+
+                <h3>
+                    ${escapeHtml(config.name)}
+                </h3>
+
+                <p>
+                    ${config.public ? "Public" : "Private"}
+                    • Updated ${config.updated}
+                </p>
+
+            </div>
+
+
+            <div class="config-actions">
+
+                <button
+                    onclick="editConfig('${config.id}')"
+                >
+                    Edit
+                </button>
+
+                <button
+                    onclick="publishConfig('${config.id}')"
+                >
+                    ${config.public ? "Unpublish" : "Publish"}
+                </button>
+
+                <button
+                    class="danger-btn"
+                    onclick="deleteConfig('${config.id}')"
+                >
+                    Delete
+                </button>
+
+            </div>
+
+        </div>
+
+    `).join("");
+
+}
+
+
+function openConfigModal(id = null) {
+
+    editingConfigId = id;
+
+
+    const modal =
+        document.getElementById("configModal");
+
+    const title =
+        document.getElementById("modalTitle");
+
+    const name =
+        document.getElementById("configName");
+
+    const json =
+        document.getElementById("configJson");
+
+
+    if (id) {
+
+        const config =
+            getAllConfigs().find(
+                item => item.id === id
+            );
+
+
+        if (!config) {
+            return;
+        }
+
+
+        title.textContent =
+            "Edit Config";
+
+        name.value =
+            config.name;
+
+        json.value =
+            JSON.stringify(
+                config.data,
+                null,
+                2
+            );
+
+    } else {
+
+        title.textContent =
+            "Create Config";
+
+        name.value =
+            "";
+
+        json.value =
+`{
+  "name": "My Config",
+  "settings": {
+    "example": true
+  }
+}`;
+
+    }
+
+
+    modal.classList.add("active");
+
+}
+
+
+function closeConfigModal() {
+
+    document
+        .getElementById("configModal")
+        .classList.remove("active");
+
+    editingConfigId = null;
+
+}
+
+
+function saveConfig() {
+
+    const username =
+        currentUser?.username;
+
+
+    const name =
+        document.getElementById("configName")
+            .value
+            .trim();
+
+
+    const jsonText =
+        document.getElementById("configJson")
+            .value;
+
+
+    if (!name) {
+
+        showToast(
+            "Please enter a config name."
+        );
+
+        return;
+    }
+
+
+    let data;
+
+
+    try {
+
+        data =
+            JSON.parse(jsonText);
+
+    } catch (error) {
+
+        showToast(
+            "Invalid JSON."
+        );
+
+        return;
+    }
+
+
+    let configs =
+        getAllConfigs();
+
+
+    if (editingConfigId) {
+
+        const index =
+            configs.findIndex(
+                config =>
+                    config.id === editingConfigId &&
+                    config.owner === username
+            );
+
+
+        if (index !== -1) {
+
+            configs[index].name =
+                name;
+
+            configs[index].data =
+                data;
+
+            configs[index].updated =
+                "just now";
+
+        }
+
+    } else {
+
+        configs.push({
+
+            id:
+                Date.now().toString(),
+
+            owner:
+                username,
+
+            name:
+                name,
+
+            data:
+                data,
+
+            public:
+                false,
+
+            updated:
+                "just now"
+
+        });
+
+    }
+
+
+    saveAllConfigs(configs);
+
+    closeConfigModal();
+
+    loadConfigs();
+
+    showToast(
+        editingConfigId
+            ? "Config updated."
+            : "Config created."
+    );
+
+}
+
+
+function editConfig(id) {
+
+    openConfigModal(id);
+
+}
+
+
+function deleteConfig(id) {
+    openConfirmModal("Delete configuration?", "This configuration will be permanently removed from this browser.", () => {
+        const username = currentUser?.username;
+        const configs = getAllConfigs().filter(config => !(config.id === id && config.owner === username));
+        saveAllConfigs(configs);
+        loadConfigs();
+        showToast("Configuration deleted.", "success");
+    });
+
+}
+
+
+function publishConfig(id) {
+
+    const username = currentUser?.username;
+
+
+    const configs =
+        getAllConfigs();
+
+
+    const config =
+        configs.find(
+            item =>
+                item.id === id &&
+                item.owner === username
+        );
+
+
+    if (!config) {
+        return;
+    }
+
+
+    config.public =
+        !config.public;
+
+
+    saveAllConfigs(configs);
+
+    loadConfigs();
+
+
+    showToast(
+        config.public
+            ? "Configuration published."
+            : "Configuration unpublished."
+    );
+
+}
+
+
+/* =========================================================
+   DOWNLOAD
+========================================================= */
+
+function downloadLoader() {
+
+    /*
+       DEMO DOWNLOAD
+
+       Replace this with your real download URL/API.
+
+       Example:
+
+       window.location.href =
+           "https://your-domain.com/downloads/loader.zip";
+    */
+
+
+    const content =
+`StrikeMenu Loader
+Version: 1.4.2
+
+Replace this demo download with your real loader URL.
+`;
+
+
+    const blob =
+        new Blob(
+            [content],
+            { type: "text/plain" }
+        );
+
+
+    const url =
+        URL.createObjectURL(blob);
+
+
+    const link =
+        document.createElement("a");
+
+
+    link.href =
+        url;
+
+    link.download =
+        "strikmenu-loader.txt";
+
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    link.remove();
+
+    URL.revokeObjectURL(url);
+
+
+    showToast(
+        "Download started."
+    );
+
+}
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function createStars() {
+
+    const starsContainer = document.getElementById("starsContainer");
+    const starCount = 100;
+
+    for (let i = 0; i < starCount; i++) {
+
+        const star = document.createElement("div");
+        star.className = "star";
+
+        const left = Math.random() * 100;
+        const delay = Math.random() * 5;
+        const duration = 8 + Math.random() * 4;
+
+        star.style.left = left + "%";
+        star.style.top = Math.random() * 100 + "%";
+        star.style.animationDelay = delay + "s";
+        star.style.animationDuration = duration + "s";
+
+        starsContainer.appendChild(star);
+
+    }
+
+}
+
+function loadBackgroundColor() {
+
+    const savedColor = localStorage.getItem("strikmenu_bgColor");
+
+    if (savedColor) {
+
+        const migratedColors = {
+            "#0a1428": "#280a10",
+            "#0a1f2e": "#2e0a12",
+            "#1a0a2e": "#2e0a1a"
+        };
+        const color = migratedColors[savedColor.toLowerCase()] || savedColor;
+
+        document.documentElement.style.setProperty("--bg", color);
+        localStorage.setItem("strikmenu_bgColor", color);
+
+        const picker = document.getElementById("bgColorPicker");
+        if (picker) {
+            picker.value = color;
+        }
+
+    }
+
+}
+
+function applyBackgroundColor() {
+
+    const picker = document.getElementById("bgColorPicker");
+    const color = picker.value;
+
+    document.documentElement.style.setProperty("--bg", color);
+
+    localStorage.setItem("strikmenu_bgColor", color);
+
+    showToast("Background color updated!");
+
+}
+
+function resetBackgroundColor() {
+
+    document.documentElement.style.setProperty("--bg", "#05070a");
+
+    localStorage.removeItem("strikmenu_bgColor");
+
+    const picker = document.getElementById("bgColorPicker");
+    if (picker) {
+        picker.value = "#05070a";
+    }
+
+    showToast("Background color reset to default!");
+
+}
+
+function setQuickColor(color) {
+
+    document.documentElement.style.setProperty("--bg", color);
+
+    localStorage.setItem("strikmenu_bgColor", color);
+
+    const picker = document.getElementById("bgColorPicker");
+    if (picker) {
+        picker.value = color;
+    }
+
+    showToast("Background color applied!");
+
+}
+
+function generateTotpSecret() {
+
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    let secret = "";
+
+    for (let i = 0; i < 16; i++) {
+        const index = Math.floor(Math.random() * chars.length);
+        secret += chars[index];
+    }
+
+    return secret;
+
+}
+
+
+function base32Decode(secret) {
+
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    let bits = 0;
+    let value = 0;
+    const output = [];
+
+    for (const char of secret) {
+        if (char === "=" || !alphabet.includes(char)) continue;
+
+        value = (value << 5) | alphabet.indexOf(char);
+        bits += 5;
+
+        while (bits >= 8) {
+            bits -= 8;
+            output.push((value >> bits) & 255);
+        }
+    }
+
+    return new Uint8Array(output);
+
+}
+
+
+async function generateTotpCode(secret, timestamp = Date.now()) {
+
+    if (!secret || !window.crypto || !window.crypto.subtle) {
+        return "000000";
+    }
+
+    const key = base32Decode(secret);
+    let timeCounter = Math.floor(timestamp / 1000 / 30);
+    const buffer = new ArrayBuffer(8);
+    const view = new DataView(buffer);
+
+    for (let i = 7; i >= 0; i--) {
+        view.setUint8(i, timeCounter & 255);
+        timeCounter = Math.floor(timeCounter / 256);
+    }
+
+    const cryptoKey = await window.crypto.subtle.importKey(
+        "raw",
+        key,
+        { name: "HMAC", hash: "SHA-1" },
+        false,
+        ["sign"]
+    );
+
+    const signature = await window.crypto.subtle.sign("HMAC", cryptoKey, buffer);
+    const bytes = new Uint8Array(signature);
+    const offset = bytes[bytes.length - 1] & 0x0F;
+
+    const binary =
+        ((bytes[offset] & 0x7F) << 24) |
+        ((bytes[offset + 1] & 0xFF) << 16) |
+        ((bytes[offset + 2] & 0xFF) << 8) |
+        (bytes[offset + 3] & 0xFF);
+
+    return (binary % 1000000).toString().padStart(6, "0");
+
+}
+
+
+function showError(element, message) {
+
+    element.textContent =
+        message;
+
+    element.style.display =
+        "block";
+
+}
+
+
+function showToast(message, type = "info") {
+
+    const toast =
+        document.getElementById("toast");
+
+
+    toast.textContent = message;
+    toast.className = `toast ${type}`;
+
+
+    toast.classList.add("show");
+
+
+    setTimeout(() => {
+
+        toast.classList.remove("show");
+
+    }, 2500);
+
+}
+
+
+function escapeHtml(text) {
+
+    const div =
+        document.createElement("div");
+
+    div.textContent =
+        text;
+
+    return div.innerHTML;
+
+}
+
+
+/* =========================================================
+   CLOSE MODAL ON BACKDROP CLICK
+========================================================= */
+
+document
+    .getElementById("configModal")
+    .addEventListener("click", function(event) {
+
+        if (event.target === this) {
+
+            closeConfigModal();
+
+        }
+
+    });
+
+document
+    .getElementById("confirmModal")
+    .addEventListener("click", function(event) {
+        if (event.target === this) closeConfirmModal();
+    });
+
+
+/* =========================================================
+   ESCAPE KEY
+========================================================= */
+
+document.addEventListener("keydown", function(event) {
+
+    if (event.key === "Escape") {
+
+        closeConfigModal();
+        closeConfirmModal();
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "strikemenu-dashboard",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "prepare:keyauth": "node backend/prepare-keyauth-sdk.js",
+    "postinstall": "node backend/prepare-keyauth-sdk.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "discord-interactions": "^4.1.1",
+    "dotenv": "^16.4.5",
+    "qrcode": "^1.5.4",
+    "tweetnacl": "^1.0.3"
+  }
+}

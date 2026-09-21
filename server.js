@@ -16,8 +16,11 @@ const allowedOrigins = new Set([
     "null"
 ]);
 const sessionSecret = process.env.SESSION_SECRET;
+const helperSharedToken = process.env.HELPER_SHARED_TOKEN || "awsenrfgqnwkfgnwajkngjkawnjlkfgjlkwjgkljnlmvcnkerjoaifhjoihjgklnkmgneokrjgiojhaerkjglkaengkjenkjghhgikhgijkjhetgklj";
 const sessions = new Map();
+const hwidChecks = new Map();
 const sessionLifetime = 8 * 60 * 60 * 1000;
+const hwidCheckLifetime = 2 * 60 * 1000;
 
 if (!sessionSecret || sessionSecret.length < 32) {
     throw new Error("SESSION_SECRET must be set to at least 32 characters.");
@@ -125,6 +128,26 @@ function validateString(value, field, maxLength = 128) {
         throw new Error(`${field} is required.`);
     }
     return value.trim();
+}
+
+function secureEquals(left, right) {
+    const leftBuffer = Buffer.from(left || "");
+    const rightBuffer = Buffer.from(right || "");
+    return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function cleanupHwidChecks() {
+    const now = Date.now();
+    for (const [challenge, check] of hwidChecks) {
+        if (check.expiresAt <= now) hwidChecks.delete(challenge);
+    }
+}
+
+function compareHwid(expected, actual) {
+    if (!expected || expected === "N/A" || expected === "Unavailable") return "NO_HWID_REGISTERED";
+    return secureEquals(String(expected).trim().toLowerCase(), String(actual).trim().toLowerCase())
+        ? "HWID_MATCH"
+        : "HWID_DOES_NOT_MATCH";
 }
 
 function startWorker() {
@@ -364,6 +387,69 @@ async function handle(request, response) {
             const authenticatedSession = await authenticated(request, response);
             if (!authenticatedSession) return;
             json({ user: authenticatedSession.user });
+            return;
+        }
+
+        if (request.method === "POST" && url.pathname === "/api/hwid/check/start") {
+            const authenticatedSession = await authenticated(request, response);
+            if (!authenticatedSession) return;
+            if (!helperSharedToken) {
+                sendJson(response, 503, { error: "The Windows helper is not configured." }, headers);
+                return;
+            }
+
+            cleanupHwidChecks();
+            const challenge = crypto.randomBytes(32).toString("base64url");
+            const expiresAt = Date.now() + hwidCheckLifetime;
+            hwidChecks.set(challenge, {
+                sessionId: authenticatedSession.session.id,
+                expiresAt,
+                status: "PENDING"
+            });
+            json({ challenge, expiresAt });
+            return;
+        }
+
+        if (request.method === "GET" && url.pathname === "/api/hwid/check/status") {
+            const authenticatedSession = await authenticated(request, response);
+            if (!authenticatedSession) return;
+            cleanupHwidChecks();
+            const challenge = url.searchParams.get("challenge") || "";
+            const check = hwidChecks.get(challenge);
+            if (!check || check.sessionId !== authenticatedSession.session.id) {
+                sendJson(response, 404, { error: "HWID check was not found or has expired." }, headers);
+                return;
+            }
+            json({ status: check.status });
+            return;
+        }
+
+        if (request.method === "POST" && url.pathname === "/api/hwid/check/complete") {
+            const body = await readBody(request);
+            if (!helperSharedToken || !secureEquals(body.helperToken, helperSharedToken)) {
+                sendJson(response, 403, { error: "Helper authentication failed." }, headers);
+                return;
+            }
+
+            const challenge = validateString(body.challenge, "Challenge", 128);
+            const hwid = validateString(body.hwid, "HWID", 256);
+            cleanupHwidChecks();
+            const check = hwidChecks.get(challenge);
+            if (!check) {
+                sendJson(response, 404, { error: "HWID check was not found or has expired." }, headers);
+                return;
+            }
+
+            const session = sessions.get(check.sessionId);
+            if (!session) {
+                sendJson(response, 401, { error: "The website session has expired." }, headers);
+                return;
+            }
+
+            const result = await workerRequest(session.worker, { type: "check" });
+            check.status = compareHwid(result.user?.hwid, hwid);
+            check.expiresAt = Date.now() + hwidCheckLifetime;
+            json({ status: check.status });
             return;
         }
 

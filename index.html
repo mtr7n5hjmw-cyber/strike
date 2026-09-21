@@ -903,6 +903,36 @@ button {
     gap: 15px;
 }
 
+.hwid-check-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 28px;
+    padding: 22px;
+}
+
+.hwid-check-copy h2 {
+    margin-bottom: 6px;
+    font-size: 17px;
+}
+
+.hwid-check-copy p,
+.hwid-check-status {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.hwid-check-status {
+    margin-top: 8px;
+}
+
+.hwid-check-card .small-btn {
+    flex: 0 0 auto;
+    min-width: 130px;
+}
+
 .action-card {
     cursor: pointer;
     position: relative;
@@ -1718,6 +1748,15 @@ textarea {
                     </div>
                 </div>
 
+                <div class="card hwid-check-card">
+                    <div class="hwid-check-copy">
+                        <h2>Verify This PC</h2>
+                        <p>Use the installed StrikeMenu helper to check this Windows computer.</p>
+                        <div class="hwid-check-status" id="hwidCheckStatus">Helper check has not started.</div>
+                    </div>
+                    <button class="small-btn" id="hwidCheckButton" onclick="checkThisPc()">Check This PC</button>
+                </div>
+
                 <h2 class="section-title">Quick Actions</h2>
                 <div class="actions">
                     <div class="card action-card" onclick="navigate('download')"><h3>Download Loader</h3><p>Download the latest version of the loader.</p><div class="action-arrow">→</div></div>
@@ -2294,6 +2333,7 @@ textarea {
 
 const STORAGE_CONFIGS = "strikmenu_configs";
 const STORAGE_DISMISSED_UPDATE = "strikmenu_dismissed_update";
+const HELPER_ORIGIN = "http://127.0.0.1:37891";
 
 let editingConfigId = null;
 let currentUser = null;
@@ -2362,17 +2402,6 @@ let pendingTotpUser = null;
 let pendingTotpMode = "login";
 let pendingTotpSecret = "";
 
-function getClientHwid() {
-    const storageKey = "strikemenu_client_hwid";
-    let hwid = localStorage.getItem(storageKey);
-    if (!hwid) {
-        hwid = crypto.randomUUID();
-        localStorage.setItem(storageKey, hwid);
-    }
-    return hwid;
-}
-
-
 async function login() {
     const username = document.getElementById("loginUsername").value.trim();
     const password = document.getElementById("loginPassword").value;
@@ -2387,7 +2416,7 @@ async function login() {
     try {
         const result = await apiRequest("/api/auth/login", {
             method: "POST",
-            body: { username, password, hwid: getClientHwid() }
+            body: { username, password }
         });
         showApp(result.user);
     } catch (requestError) {
@@ -2413,7 +2442,7 @@ async function register() {
     try {
         const result = await apiRequest("/api/auth/register", {
             method: "POST",
-            body: { username, password, license, hwid: getClientHwid() }
+            body: { username, password, license }
         });
         showApp(result.user);
     } catch (requestError) {
@@ -2594,6 +2623,50 @@ async function loadAccount() {
     currentUser = result.user;
     updateAccountInfo(currentUser);
     return currentUser;
+}
+
+function setHwidCheckStatus(status) {
+    const statusElement = document.getElementById("hwidCheckStatus");
+    const messages = {
+        STARTING: "Starting the Windows helper...",
+        PENDING: "Waiting for the helper to verify this PC...",
+        HWID_MATCH: "HWID MATCH - This PC is authorised for your StrikeMenu account.",
+        HWID_DOES_NOT_MATCH: "HWID DOES NOT MATCH - This PC is not authorised for this account.",
+        NO_HWID_REGISTERED: "NO HWID REGISTERED - This account has no registered HWID.",
+        HELPER_NOT_RUNNING: "HELPER NOT RUNNING - Start the StrikeMenu helper and try again."
+    };
+    statusElement.textContent = messages[status] || status;
+}
+
+async function checkThisPc() {
+    const button = document.getElementById("hwidCheckButton");
+    button.disabled = true;
+    setHwidCheckStatus("STARTING");
+
+    try {
+        const challenge = await apiRequest("/api/hwid/check/start", { method: "POST" });
+        try {
+            await fetch(`${HELPER_ORIGIN}/check?challenge=${encodeURIComponent(challenge.challenge)}`);
+        } catch {
+            setHwidCheckStatus("HELPER_NOT_RUNNING");
+            return;
+        }
+
+        setHwidCheckStatus("PENDING");
+        for (let attempt = 0; attempt < 30; attempt += 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const result = await apiRequest(`/api/hwid/check/status?challenge=${encodeURIComponent(challenge.challenge)}`);
+            if (result.status !== "PENDING") {
+                setHwidCheckStatus(result.status);
+                return;
+            }
+        }
+        setHwidCheckStatus("The helper did not complete the check before it expired.");
+    } catch (requestError) {
+        setHwidCheckStatus(requestError.message);
+    } finally {
+        button.disabled = false;
+    }
 }
 
 

@@ -12,3 +12,5 @@ services:
         generateValue: true
       - key: FRONTEND_ORIGIN
         sync: false
+      - key: HELPER_SHARED_TOKEN
+        sync: false

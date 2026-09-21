@@ -16,7 +16,7 @@ const allowedOrigins = new Set([
     "null"
 ]);
 const sessionSecret = process.env.SESSION_SECRET;
-const helperSharedToken = process.env.HELPER_SHARED_TOKEN || "awsenrfgqnwkfgnwajkngjkawnjlkfgjlkwjgkljnlmvcnkerjoaifhjoihjgklnkmgneokrjgiojhaerkjglkaengkjenkjghhgikhgijkjhetgklj";
+const helperSharedToken = process.env.HELPER_SHARED_TOKEN || "";
 const sessions = new Map();
 const hwidChecks = new Map();
 const sessionLifetime = 8 * 60 * 60 * 1000;
@@ -141,6 +141,18 @@ function cleanupHwidChecks() {
     for (const [challenge, check] of hwidChecks) {
         if (check.expiresAt <= now) hwidChecks.delete(challenge);
     }
+}
+
+function createHwidChallenge(data) {
+    cleanupHwidChecks();
+    const challenge = crypto.randomBytes(32).toString("base64url");
+    hwidChecks.set(challenge, {
+        ...data,
+        challenge,
+        expiresAt: Date.now() + hwidCheckLifetime,
+        status: "PENDING"
+    });
+    return { challenge, expiresAt: hwidChecks.get(challenge).expiresAt };
 }
 
 function compareHwid(expected, actual) {
@@ -328,27 +340,20 @@ async function handle(request, response) {
             return;
         }
 
-        if (request.method === "POST" && url.pathname === "/api/auth/login") {
+        if (request.method === "POST" && url.pathname === "/api/auth/login/start") {
             const body = await readBody(request);
             const username = validateString(body.username, "Username");
             const password = validateString(body.password, "Password", 512);
-            const hwid = body.hwid ? validateString(body.hwid, "Device ID", 128) : undefined;
-            const worker = startWorker();
-            let result;
-            try {
-                await workerRequest(worker, { type: "init" });
-                result = await workerRequest(worker, { type: "login", username, password, hwid });
-            } catch (error) {
-                if (worker.connected) worker.kill();
-                const classified = classifyLoginError(error);
-                sendJson(response, classified.status, classified, headers);
+            if (!helperSharedToken) {
+                sendJson(response, 503, { error: "The Windows helper is not configured." }, headers);
                 return;
             }
-            const cookie = createSession(worker);
-            sendJson(response, 200, { authenticated: true, user: publicUser(result.user) }, {
-                ...headers,
-                "Set-Cookie": sessionCookie(cookie)
-            });
+            json(createHwidChallenge({ kind: "login", username, password }));
+            return;
+        }
+
+        if (request.method === "POST" && url.pathname === "/api/auth/login") {
+            sendJson(response, 400, { error: "Use the Windows helper to verify this PC before logging in." }, headers);
             return;
         }
 
@@ -398,29 +403,37 @@ async function handle(request, response) {
                 return;
             }
 
-            cleanupHwidChecks();
-            const challenge = crypto.randomBytes(32).toString("base64url");
-            const expiresAt = Date.now() + hwidCheckLifetime;
-            hwidChecks.set(challenge, {
+            const { challenge, expiresAt } = createHwidChallenge({
                 sessionId: authenticatedSession.session.id,
-                expiresAt,
-                status: "PENDING"
+                kind: "check"
             });
             json({ challenge, expiresAt });
             return;
         }
 
         if (request.method === "GET" && url.pathname === "/api/hwid/check/status") {
-            const authenticatedSession = await authenticated(request, response);
-            if (!authenticatedSession) return;
             cleanupHwidChecks();
             const challenge = url.searchParams.get("challenge") || "";
             const check = hwidChecks.get(challenge);
-            if (!check || check.sessionId !== authenticatedSession.session.id) {
+            if (!check) {
                 sendJson(response, 404, { error: "HWID check was not found or has expired." }, headers);
                 return;
             }
-            json({ status: check.status });
+
+            if (check.kind === "check") {
+                const authenticatedSession = await authenticated(request, response);
+                if (!authenticatedSession || check.sessionId !== authenticatedSession.session.id) return;
+            }
+
+            const result = { status: check.status };
+            if (check.status === "AUTHENTICATED") {
+                result.authenticated = true;
+                result.user = publicUser(check.user);
+            }
+            if (check.status === "ERROR") result.error = check.error;
+            sendJson(response, 200, result, check.status === "AUTHENTICATED"
+                ? { ...headers, "Set-Cookie": sessionCookie(check.cookie) }
+                : headers);
             return;
         }
 
@@ -440,12 +453,37 @@ async function handle(request, response) {
                 return;
             }
 
+            if (check.kind === "login") {
+                const worker = startWorker();
+                try {
+                    await workerRequest(worker, { type: "init" });
+                    const result = await workerRequest(worker, {
+                        type: "login",
+                        username: check.username,
+                        password: check.password,
+                        hwid
+                    });
+                    const cookie = createSession(worker);
+                    check.status = "AUTHENTICATED";
+                    check.user = result.user;
+                    check.cookie = cookie;
+                    check.expiresAt = Date.now() + hwidCheckLifetime;
+                } catch (error) {
+                    if (worker.connected) worker.kill();
+                    const classified = classifyLoginError(error);
+                    check.status = "ERROR";
+                    check.error = classified.error;
+                    check.expiresAt = Date.now() + hwidCheckLifetime;
+                }
+                json({ status: check.status });
+                return;
+            }
+
             const session = sessions.get(check.sessionId);
             if (!session) {
                 sendJson(response, 401, { error: "The website session has expired." }, headers);
                 return;
             }
-
             const result = await workerRequest(session.worker, { type: "check" });
             check.status = compareHwid(result.user?.hwid, hwid);
             check.expiresAt = Date.now() + hwidCheckLifetime;

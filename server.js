@@ -17,6 +17,7 @@ const allowedOrigins = new Set([
 ]);
 const sessionSecret = process.env.SESSION_SECRET;
 const helperSharedToken = process.env.HELPER_SHARED_TOKEN || "";
+const websiteHwid = process.env.KEYAUTH_WEB_HWID || "strikemenu-web";
 const sessions = new Map();
 const hwidChecks = new Map();
 const sessionLifetime = 8 * 60 * 60 * 1000;
@@ -359,7 +360,7 @@ async function handle(request, response) {
             const worker = startWorker();
             try {
                 await workerRequest(worker, { type: "init" });
-                const result = await workerRequest(worker, { type: "login", username, password });
+                const result = await workerRequest(worker, { type: "login", username, password, hwid: websiteHwid });
                 const cookie = createSession(worker);
                 sendJson(response, 200, { authenticated: true, user: publicUser(result.user) }, {
                     ...headers,
@@ -378,10 +379,9 @@ async function handle(request, response) {
             const username = validateString(body.username, "Username");
             const password = validateString(body.password, "Password", 512);
             const license = validateString(body.license, "License key");
-            const hwid = body.hwid ? validateString(body.hwid, "Device ID", 128) : undefined;
             const worker = startWorker();
             await workerRequest(worker, { type: "init" });
-            const result = await workerRequest(worker, { type: "register", username, password, license, hwid });
+            const result = await workerRequest(worker, { type: "register", username, password, license, hwid: websiteHwid });
             const cookie = createSession(worker);
             sendJson(response, 200, { authenticated: true, user: publicUser(result.user) }, {
                 ...headers,

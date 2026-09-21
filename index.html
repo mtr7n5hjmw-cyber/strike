@@ -2414,27 +2414,11 @@ async function login() {
     }
 
     try {
-        const challenge = await apiRequest("/api/auth/login/start", {
+        const result = await apiRequest("/api/auth/login", {
             method: "POST",
             body: { username, password }
         });
-        try {
-            await fetch(`${HELPER_ORIGIN}/check?challenge=${encodeURIComponent(challenge.challenge)}`);
-        } catch {
-            throw new Error("StrikeMenu helper is not running. Start it and try again.");
-        }
-
-        for (let attempt = 0; attempt < 30; attempt += 1) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const result = await apiRequest(`/api/hwid/check/status?challenge=${encodeURIComponent(challenge.challenge)}`);
-            if (result.status === "PENDING") continue;
-            if (result.status === "AUTHENTICATED") {
-                showApp(result.user);
-                return;
-            }
-            throw new Error(result.error || "HWID verification failed.");
-        }
-        throw new Error("The helper did not complete verification before it expired.");
+        showApp(result.user);
     } catch (requestError) {
         showError(error, requestError.message);
     }

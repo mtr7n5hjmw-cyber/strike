@@ -353,7 +353,23 @@ async function handle(request, response) {
         }
 
         if (request.method === "POST" && url.pathname === "/api/auth/login") {
-            sendJson(response, 400, { error: "Use the Windows helper to verify this PC before logging in." }, headers);
+            const body = await readBody(request);
+            const username = validateString(body.username, "Username");
+            const password = validateString(body.password, "Password", 512);
+            const worker = startWorker();
+            try {
+                await workerRequest(worker, { type: "init" });
+                const result = await workerRequest(worker, { type: "login", username, password });
+                const cookie = createSession(worker);
+                sendJson(response, 200, { authenticated: true, user: publicUser(result.user) }, {
+                    ...headers,
+                    "Set-Cookie": sessionCookie(cookie)
+                });
+            } catch (error) {
+                if (worker.connected) worker.kill();
+                const classified = classifyLoginError(error);
+                sendJson(response, classified.status, { error: classified.error }, headers);
+            }
             return;
         }
 

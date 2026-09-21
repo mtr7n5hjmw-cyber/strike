@@ -16,7 +16,7 @@ const allowedOrigins = new Set([
     "null"
 ]);
 const sessionSecret = process.env.SESSION_SECRET;
-const helperSharedToken = process.env.e460a929fbd7867ec091225b6bf54270jhadjfoajwfgojaowngoinawroghioewhgewggggggggggggggggggggggggewfwqfwf || "";
+const helperSharedToken = process.env.HELPER_SHARED_TOKEN || "";
 const sessions = new Map();
 const hwidChecks = new Map();
 const sessionLifetime = 8 * 60 * 60 * 1000;

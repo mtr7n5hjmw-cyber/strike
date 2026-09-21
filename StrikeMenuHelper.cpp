@@ -16,7 +16,7 @@ namespace {
 constexpr unsigned short HELPER_PORT = 37891;
 constexpr wchar_t BACKEND_HOST[] = L"strike-khu8.onrender.com";
 constexpr wchar_t ALLOWED_ORIGIN[] = L"https://strike-khu8.onrender.com";
-constexpr wchar_t HELPER_SHARED_TOKEN[] = L"awsenrfgqnwkfgnwajkngjkawnjlkfgjlkwjgkljnlmvcnkerjoaifhjoihjgklnkmgneokrjgiojhaerkjglkaengkjenkjghhgikhgijkjhetgklj";
+constexpr wchar_t HELPER_SHARED_TOKEN[] = L"e460a929fbd7867ec091225b6bf54270jhadjfoajwfgojaowngoinawroghioewhgewggggggggggggggggggggggggewfwqfwf";
 
 std::string Narrow(const std::wstring& value) {
     return std::string(value.begin(), value.end());
